@@ -1,7 +1,9 @@
 let url = 'https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json'
+let url2 = "https://crp-research-mankato.herokuapp.com/getYearlyTotals"
 let req = new XMLHttpRequest()
 
 let values =[]
+let crpdata = {}
 
 let xScale
 let yScale
@@ -17,21 +19,22 @@ let svg = d3.select('svg')
 let tooltip = d3.select('#tooltip')
 
 let generateScales = () => {
-    
+    let years = []
+    let keys = Object.keys(crpdata)
+    keys.forEach(element => {
+        years.push(Number(element));
+    });
+    let subs = []
+    keys.forEach(element => {
+        subs.push(crpdata[element]["commoditySubsidies"]);
+    });
+
     xScale = d3.scaleLinear()
-                        .domain([d3.min(values, (item) => {
-                            return item['Year']
-                        }) - 1 , d3.max(values, (item) => {
-                            return item['Year']
-                        }) + 1])
+                        .domain([d3.min(years) - 1 , d3.max(years) + 1])
                         .range([padding, width-padding])
 
-    yScale = d3.scaleTime()
-                        .domain([d3.min(values, (item) => {
-                            return new Date(item['Seconds'] * 1000)
-                        }), d3.max(values, (item) => {
-                            return new Date(item['Seconds'] * 1000)
-                        })])
+    yScale = d3.scaleLinear()
+                        .domain([d3.max(subs) / 1_000_000, d3.min(subs) / 1_000_000])
                         .range([padding, height-padding])
 
 }
@@ -42,42 +45,50 @@ let drawCanvas = () => {
 }
 
 let drawPoints = () => {
+    let fakeData = [
+        {"year": 1995, "conservationSubsidies": 2_000_000},
+        {"year": 2000, "conservationSubsidies": 4_000_000}
+    ]
+
+    let years = Object.keys(crpdata)
+
+    let convertedData = []
+
+    years.forEach(year => {
+        let data = {"year": year,
+         "conservationSubsidies": crpdata[year]["conservationSubsidies"],
+         "disasterSubsidies": crpdata[year]["disasterSubsidies"],
+         "commoditySubsidies": crpdata[year]["commoditySubsidies"]}
+        convertedData.push(data)
+    });
 
     svg.selectAll('circle')
-            .data(values)
+            .data(convertedData)
             .enter()
             .append('circle')
             .attr('class', 'dot')
-            .attr('r', '5')
+            .attr('r', '6')
             .attr('data-xvalue', (item) => {
-                return item['Year']
+                console.log(item)
+                return item["year"]
             })
             .attr('data-yvalue', (item) => {
-                return new Date(item['Seconds'] * 1000)
-            })
-          .attr('cx', (item) => {
-              return xScale(item['Year'])
-          })         
-            .attr('cy', (item) => {
-                return yScale(new Date(item['Seconds'] * 1000))
+                return item["commoditySubsidies"]
             })
             .attr('fill', (item) => {
-                if(item['URL'] === ""){
-                    return 'lightgreen'
-                }else{
-                    return 'orange'
-                }
+                return 'lightgreen'
+            })
+            .attr('cx', (item) => {
+              return xScale(item['year'])
+            })         
+            .attr('cy', (item) => {
+                return yScale(item["commoditySubsidies"] / 1_000_000)
             })
             .on('mouseover', (item) => {
                 tooltip.transition()
                     .style('visibility', 'visible')
                 
-                if(item['Doping'] != ""){
-                    tooltip.text(item['Year'] + ' - ' + item['Name'] + ' - ' + item['Time'] + ' - ' + item['Doping'])
-                }else{
-                    tooltip.text(item['Year'] + ' - ' + item['Name'] + ' - ' + item['Time'] + ' - ' + 'No Allegations')
-                }
-                
+                tooltip.text(item['year'] + ' - $' + item['commoditySubsidies'])
                 tooltip.attr('data-year', item['Year'])
             })
             .on('mouseout', (item) => {
@@ -93,7 +104,7 @@ let generateAxes = () => {
                 
 
     yAxis = d3.axisLeft(yScale)
-                .tickFormat(d3.timeFormat('%M:%S'))
+                .tickFormat(d3.format('d'))
 
 
     svg.append('g')
@@ -107,14 +118,34 @@ let generateAxes = () => {
         .attr('transform','translate(' + padding + ', 0)')
 }
 
+async function getCRPData(){
+    let returnData
+    await fetch(url2, {method: "GET"})
+    .then(res => res.json())
+    .then(data => returnData = data);
+    crpdata = await returnData;
+}
 
-req.open('GET', url, true)
-req.onload = () => {
-    values = JSON.parse(req.responseText)
-    console.log(values)
+let crpPromise = getCRPData()
+
+async function createGraph(){
+    await crpPromise;
+    console.log(crpdata)
     drawCanvas()
     generateScales()
     drawPoints()
     generateAxes()
 }
-req.send()
+
+createGraph()
+
+// req.open('GET', url, true)
+// req.onload = () => {
+//     values = JSON.parse(req.responseText)
+//     console.log(values)
+//     drawCanvas()
+//     generateScales()
+//     drawPoints()
+//     generateAxes()
+// }
+// req.send()
