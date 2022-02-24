@@ -1,8 +1,6 @@
-let url = 'https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json'
 let url2 = "https://crp-research-mankato.herokuapp.com/getYearlyTotals"
 let req = new XMLHttpRequest()
 
-let values =[]
 let crpdata = {}
 
 let xScale
@@ -17,6 +15,11 @@ let padding = 40
 
 let svg = d3.select('svg')
 let tooltip = d3.select('#tooltip')
+
+function removeLoader(){
+    const child = document.getElementById('loader');
+    child.remove()
+}
 
 let generateScales = () => {
     let years = []
@@ -46,7 +49,6 @@ let drawCanvas = () => {
 
 let drawPoints = () => {
     let years = Object.keys(crpdata)
-
     let convertedData = []
 
     years.forEach(year => {
@@ -119,11 +121,11 @@ async function getCRPData(){
     crpdata = await returnData;
 }
 
-let crpPromise = getCRPData()
-
 async function createGraph(){
+    let crpPromise = getCRPData()
     await crpPromise;
     console.log(crpdata)
+    removeLoader()
     drawCanvas()
     generateScales()
     generateAxes()
