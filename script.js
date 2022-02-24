@@ -1,9 +1,7 @@
-let url = 'https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json'
-let url2 = "https://crp-research-mankato.herokuapp.com/getYearlyTotals"
+let url = "https://crp-research-mankato.herokuapp.com/getYearlyTotals"
 let req = new XMLHttpRequest()
 
-let values =[]
-let crpdata = {}
+let crpdata
 
 let xScale
 let yScale
@@ -46,7 +44,6 @@ let drawCanvas = () => {
 
 let drawPoints = () => {
     let years = Object.keys(crpdata)
-
     let convertedData = []
 
     years.forEach(year => {
@@ -64,7 +61,6 @@ let drawPoints = () => {
             .attr('class', 'dot')
             .attr('r', '6')
             .attr('data-xvalue', (item) => {
-                console.log(item)
                 return item["year"]
             })
             .attr('data-yvalue', (item) => {
@@ -77,13 +73,12 @@ let drawPoints = () => {
               return xScale(item['year'])
             })         
             .attr('cy', (item) => {
-
                 return yScale(item["commoditySubsidies"] / 1_000_000)
             })
             .on('mouseover', (item) => {
                 tooltip.transition()
                     .style('visibility', 'visible')
-                
+    
                 tooltip.text(item['year'] + ' - $' + item['commoditySubsidies'])
                 tooltip.attr('data-year', item['Year'])
             })
@@ -111,17 +106,16 @@ let generateAxes = () => {
         .attr('transform','translate(' + padding + ', 0)')
 }
 
-async function getCRPData(){
+function getCRPData(){
     let returnData
-    await fetch(url2, {method: "GET"})
+    fetch(url, {method: "GET"})
     .then(res => res.json())
     .then(data => returnData = data);
-    crpdata = await returnData;
+    crpdata = returnData;
 }
 
-let crpPromise = getCRPData()
-
 async function createGraph(){
+    let crpPromise = getCRPData()
     await crpPromise;
     console.log(crpdata)
     drawCanvas()
