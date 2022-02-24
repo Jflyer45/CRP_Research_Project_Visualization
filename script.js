@@ -12,7 +12,7 @@ let xAxis
 let yAxis
 
 let width = 800
-let height = 600
+let height = 500
 let padding = 40
 
 let svg = d3.select('svg')
@@ -30,11 +30,11 @@ let generateScales = () => {
     });
 
     xScale = d3.scaleLinear()
-                        .domain([d3.min(years) - 1 , d3.max(years) + 1])
+                        .domain([d3.min(years) - 1, d3.max(years) + 1])
                         .range([padding, width-padding])
 
     yScale = d3.scaleLinear()
-                        .domain([d3.max(subs) / 1_000_000, d3.min(subs) / 1_000_000])
+                        .domain([d3.max(subs) / 1_000_000, 0])
                         .range([padding, height-padding])
 
 }
@@ -45,11 +45,6 @@ let drawCanvas = () => {
 }
 
 let drawPoints = () => {
-    let fakeData = [
-        {"year": 1995, "conservationSubsidies": 2_000_000},
-        {"year": 2000, "conservationSubsidies": 4_000_000}
-    ]
-
     let years = Object.keys(crpdata)
 
     let convertedData = []
@@ -82,6 +77,7 @@ let drawPoints = () => {
               return xScale(item['year'])
             })         
             .attr('cy', (item) => {
+
                 return yScale(item["commoditySubsidies"] / 1_000_000)
             })
             .on('mouseover', (item) => {
@@ -100,13 +96,10 @@ let drawPoints = () => {
 let generateAxes = () => {
 
     xAxis = d3.axisBottom(xScale)
-                .tickFormat(d3.format('d'))
-                
+                .tickFormat(d3.format('d'))  
 
     yAxis = d3.axisLeft(yScale)
                 .tickFormat(d3.format('d'))
-
-
     svg.append('g')
         .call(xAxis)
         .attr('id', 'x-axis')
@@ -133,8 +126,8 @@ async function createGraph(){
     console.log(crpdata)
     drawCanvas()
     generateScales()
-    drawPoints()
     generateAxes()
+    drawPoints()
 }
 
 createGraph()
